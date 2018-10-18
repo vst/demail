@@ -1,0 +1,6 @@
+VERS: 2018-10-18 ------- release/0.0.1
+
+    * 2018-10-18 119cf95 Version bumped to 0.0.1 (vst@vsthost.com)
+    * 2018-10-18 d76a4c2 Some dependency upgrades + Debian packaging (vst@vsthost.com)
+    * 2018-10-18 2b429ca [chore] Initial code commit (vst@vsthost.com)
+    * 2018-10-18 b95313c Initial commit (vst@vsthost.com)
