@@ -9,11 +9,12 @@ val VersionMail       = "1.4.1"
 // Configure the root project:
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(JavaAppPackaging)
   .settings(
     // Top-level Settings:
     name := "demail",
     organization := "com.vsthost.rnd",
-    scalaVersion := "2.12.4",
+    scalaVersion := "2.12.7",
     version := "0.0.1-SNAPSHOT",
 
     // Scalac Options:
@@ -30,5 +31,10 @@ lazy val root = (project in file("."))
       "com.lihaoyi"   %% "fansi"       % VersionFansi,
       "javax.mail"    %  "mail"        % VersionMail,
       "org.rogach"    %% "scallop"     % VersionScallop,
-    )
+    ),
+
+    // Debian packaging configuration:
+    maintainer := "Vehbi Sinan Tunalioglu <vst@vsthost.com>",
+    packageSummary := "CLI application to work with IMAP accounts.",
+    packageDescription := """List remote IMAP folders, messages and download attachments""",
   )
