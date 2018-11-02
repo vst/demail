@@ -129,9 +129,9 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     * @return [[Message]] printed on the console.
     */
   private def printMessage(message: Message): Message = {
-    println(fansi.Color.Blue(s"Subject : ${message.getSubject}").render)
-    println(fansi.Color.Blue(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Blue(s"Sent    : ${message.getSentDate}").render)
+    println(fansi.Color.Cyan(s"Subject : ${message.getSubject}").render)
+    println(fansi.Color.Cyan(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
+    println(fansi.Color.Cyan(s"Sent    : ${message.getSentDate}").render)
     message
   }
 

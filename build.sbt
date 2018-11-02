@@ -1,9 +1,9 @@
 // Define versions for libraries:
-val VersionCats       = "1.0.1"
-val VersionCatsEffect = "0.8"
+val VersionCats       = "1.4.0"
+val VersionCatsEffect = "1.0.0"
 val VersionFansi      = "0.2.5"
-val VersionScallop    = "3.1.1"
-val VersionMail       = "1.4.1"
+val VersionScallop    = "3.1.3"
+val VersionMail       = "1.4.7"
 
 
 // Configure the root project:

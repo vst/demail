@@ -78,9 +78,10 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
     * @return [[Message]] printed on the console.
     */
   private def printMessage(message: Message): Message = {
-    println(fansi.Color.Blue(s"Subject : ${message.getSubject}").render)
-    println(fansi.Color.Blue(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Blue(s"Sent    : ${message.getSentDate}").render)
+    println(fansi.Color.Cyan(s"Subject    : ${message.getSubject}").render)
+    println(fansi.Color.Cyan(s"From       : ${message.getFrom.map(_.toString).mkString(", ")}").render)
+    println(fansi.Color.Cyan(s"Sent       : ${message.getSentDate}").render)
+    println(fansi.Color.Cyan(f"Size       : ${BigDecimal(message.getSize / (1024.0 * 1024)).setScale(2, BigDecimal.RoundingMode.HALF_UP)} MB").render)
     println("")
     message
   }
