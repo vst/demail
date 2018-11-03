@@ -3,7 +3,7 @@ val VersionCats       = "1.4.0"
 val VersionCatsEffect = "1.0.0"
 val VersionFansi      = "0.2.5"
 val VersionScallop    = "3.1.3"
-val VersionMail       = "1.4.7"
+val VersionMail       = "1.6.2"
 
 
 // Configure the root project:
@@ -29,7 +29,8 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-core"   % VersionCats,
       "org.typelevel" %% "cats-effect" % VersionCatsEffect,
       "com.lihaoyi"   %% "fansi"       % VersionFansi,
-      "javax.mail"    %  "mail"        % VersionMail,
+      "com.sun.mail"  %  "javax.mail"  % VersionMail,
+      "com.sun.mail"  %  "gimap"       % VersionMail,
       "org.rogach"    %% "scallop"     % VersionScallop,
     ),
 

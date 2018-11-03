@@ -1,9 +1,10 @@
 package com.vsthost.rnd.demail.imap
 
 import javax.mail._
-
 import cats.effect.Effect
 import cats.implicits._
+import com.sun.mail.gimap.{GmailFolder, GmailStore}
+import com.sun.mail.imap.{IMAPFolder, IMAPStore, SortTerm}
 
 import scala.language.higherKinds
 import scala.util.Try
@@ -27,6 +28,10 @@ class DefaultMailRepository[M[_]](host: String,
                                   pass: String)
                                  (implicit M : Effect[M]) extends MailRepository[M] {
   /**
+    * Indicates that we are running on gmail.
+    */
+  private val isGmail = host == "imap.gmail.com"
+  /**
     * Defines the store over which we keep the IMAP connection to the remote.
     */
   lazy private val _store: Store = {
@@ -40,7 +45,10 @@ class DefaultMailRepository[M[_]](host: String,
     val session = Session.getDefaultInstance(props, null)
 
     // Get the store and return:
-    session.getStore(if (ssl) "imaps" else "imap")
+    if (host == "imap.gmail.com")
+      session.getStore("gimap").asInstanceOf[GmailStore]
+    else
+      session.getStore(if (ssl) "imaps" else "imap")
   }
 
   /**
@@ -144,7 +152,12 @@ class DefaultMailRepository[M[_]](host: String,
     */
   override def listFolder(folder: Folder): M[Array[Message]] = M.delay {
     if (folder.isOpen) {
-      folder.getMessages
+      if (isGmail)
+        folder.asInstanceOf[GmailFolder].getMessages.sortBy(-_.getReceivedDate.toInstant.toEpochMilli)
+      else if (_store.asInstanceOf[IMAPStore].hasCapability("SORT"))
+        folder.asInstanceOf[IMAPFolder].getSortedMessages(Array[SortTerm](SortTerm.REVERSE, SortTerm.DATE))
+      else
+        folder.getMessages()
     }
     else {
       Array.empty
