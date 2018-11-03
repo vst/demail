@@ -1,10 +1,13 @@
 package com.vsthost.rnd.demail.imap
 
-import javax.mail._
+import java.time.{LocalDate, ZoneId}
+import java.util.Date
+
 import cats.effect.Effect
 import cats.implicits._
-import com.sun.mail.gimap.{GmailFolder, GmailStore}
-import com.sun.mail.imap.{IMAPFolder, IMAPStore, SortTerm}
+import com.sun.mail.gimap.GmailStore
+import javax.mail._
+import javax.mail.search.{AndTerm, ComparisonTerm, SentDateTerm}
 
 import scala.language.higherKinds
 import scala.util.Try
@@ -142,24 +145,38 @@ class DefaultMailRepository[M[_]](host: String,
     }
   }
 
+  private def _ld2d(ld: LocalDate): Date = Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant)
+
   /**
-    * List the contents of the [[Folder]].
+    * List the message contents of the [[Folder]].
     *
     * Note that the folder must be opened by the time it is given to the function.
     *
     * @param folder [[Folder]] which the contents list of.
+    * @param since Date since.
+    * @param until Date until.
     * @return An [[Array]] of [[Message]]s, if any.
     */
-  override def listFolder(folder: Folder): M[Array[Message]] = M.delay {
-    if (folder.isOpen) {
-      if (isGmail)
-        folder.asInstanceOf[GmailFolder].getMessages.sortBy(-_.getReceivedDate.toInstant.toEpochMilli)
-      else if (_store.asInstanceOf[IMAPStore].hasCapability("SORT"))
-        folder.asInstanceOf[IMAPFolder].getSortedMessages(Array[SortTerm](SortTerm.REVERSE, SortTerm.DATE))
-      else
-        folder.getMessages()
+  override def messages(folder: Folder, since: Option[LocalDate], until: Option[LocalDate]): M[Array[Message]] = M.delay {
+    // Get the search term for the date range:
+    val searchTearm = (since, until) match {
+      case (None, None) =>
+        None
+      case (Some(x), None) =>
+        Some(new SentDateTerm(ComparisonTerm.GE, _ld2d(x)))
+      case (None, Some(x)) =>
+        Some(new SentDateTerm(ComparisonTerm.LE, _ld2d(x)))
+      case (Some(x), Some(y)) =>
+        Some(new AndTerm(new SentDateTerm(ComparisonTerm.GE, _ld2d(x)), new SentDateTerm(ComparisonTerm.LE, _ld2d(y))))
     }
-    else {
+
+    // Attempt:
+    if (folder.isOpen) {
+      searchTearm match {
+        case None => folder.getMessages
+        case Some(term) => folder.search(term)
+      }
+    } else {
       Array.empty
     }
   }

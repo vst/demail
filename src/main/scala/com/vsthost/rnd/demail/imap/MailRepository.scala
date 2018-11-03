@@ -1,5 +1,7 @@
 package com.vsthost.rnd.demail.imap
 
+import java.time.LocalDate
+
 import javax.mail.{Folder, Message, Store}
 
 import scala.language.higherKinds
@@ -56,14 +58,16 @@ trait MailRepository[M[_]] {
   def closeFolder(folder: Folder): M[Unit]
 
   /**
-    * List the contents of the [[Folder]].
+    * List the message contents of the [[Folder]].
     *
     * Note that the folder must be opened by the time it is given to the function.
     *
     * @param folder [[Folder]] which the contents list of.
+    * @param since Date since.
+    * @param until Date until.
     * @return An [[Array]] of [[Message]]s, if any.
     */
-  def listFolder(folder: Folder): M[Array[Message]]
+  def messages(folder: Folder, since: Option[LocalDate], until: Option[LocalDate]): M[Array[Message]]
 
   /**
     * Move messages from one folder to another.
