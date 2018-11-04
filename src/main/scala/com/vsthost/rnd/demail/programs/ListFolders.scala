@@ -71,7 +71,13 @@ class ListFolders[M[_] : Effect](command: String) extends Subcommand(command) wi
     * @return [[Folder]] printed on the console.
     */
   private def printFolder(folder: Folder): Folder = {
-    println(fansi.Color.Blue(s"${folder.getFullName} (${folder.getURLName})").render)
+    val folderType = folder.getType
+    val holdsMessage = (folderType & Folder.HOLDS_MESSAGES) != 0
+    //val holdsFolders = (folderType & Folder.HOLDS_FOLDERS) != 0
+    println(fansi.Color.Cyan(s"${folder.getFullName} (${if (holdsMessage) "Regular" else "Virtual"} Folder)").render)
+    println(fansi.Color.Green(s"    Folder URL    : ${folder.getURLName}"))
+    if (holdsMessage)
+      println(fansi.Color.Green(s"    Message Count : ${folder.getMessageCount}"))
     folder
   }
 }

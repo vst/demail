@@ -1,5 +1,15 @@
-VERS: 2018-10-18 ------- release/0.0.1
+VERS: 2018-11-04 ------- release/0.0.2
 
+    * 2018-11-04 4e19348 Version bumped to 0.0.2 (vst@vsthost.com)
+    * 2018-11-04 b65289c List mails with optional date range, no Gmail/SORT (vst@vsthost.com)
+    * 2018-11-03 5ebf4f3 Use com.sun.mail, enable GMail/IMAP capabilities (vst@vsthost.com)
+    * 2018-11-02 32dabf6 Dependency updates and small improvements (vst@vsthost.com)
+    * 2018-10-18 046b3ff Version bumped to 0.0.2-SNAPSHOT (vst@vsthost.com)
+
+VERS: 2018-10-18 7f6cfc6 0.0.1 (vst@vsthost.com)
+
+    * 2018-10-18 ab8e7e0 Merge branch 'release/0.0.1' (vst@vsthost.com)
+    * 2018-10-18 ef32cfe Change log added (vst@vsthost.com)
     * 2018-10-18 119cf95 Version bumped to 0.0.1 (vst@vsthost.com)
     * 2018-10-18 d76a4c2 Some dependency upgrades + Debian packaging (vst@vsthost.com)
     * 2018-10-18 2b429ca [chore] Initial code commit (vst@vsthost.com)

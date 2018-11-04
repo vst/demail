@@ -1,9 +1,13 @@
 package com.vsthost.rnd.demail.imap
 
-import javax.mail._
+import java.time.{LocalDate, ZoneId}
+import java.util.Date
 
 import cats.effect.Effect
 import cats.implicits._
+import com.sun.mail.gimap.GmailStore
+import javax.mail._
+import javax.mail.search.{AndTerm, ComparisonTerm, SentDateTerm}
 
 import scala.language.higherKinds
 import scala.util.Try
@@ -27,6 +31,10 @@ class DefaultMailRepository[M[_]](host: String,
                                   pass: String)
                                  (implicit M : Effect[M]) extends MailRepository[M] {
   /**
+    * Indicates that we are running on gmail.
+    */
+  private val isGmail = host == "imap.gmail.com"
+  /**
     * Defines the store over which we keep the IMAP connection to the remote.
     */
   lazy private val _store: Store = {
@@ -40,7 +48,10 @@ class DefaultMailRepository[M[_]](host: String,
     val session = Session.getDefaultInstance(props, null)
 
     // Get the store and return:
-    session.getStore(if (ssl) "imaps" else "imap")
+    if (host == "imap.gmail.com")
+      session.getStore("gimap").asInstanceOf[GmailStore]
+    else
+      session.getStore(if (ssl) "imaps" else "imap")
   }
 
   /**
@@ -134,19 +145,38 @@ class DefaultMailRepository[M[_]](host: String,
     }
   }
 
+  private def _ld2d(ld: LocalDate): Date = Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant)
+
   /**
-    * List the contents of the [[Folder]].
+    * List the message contents of the [[Folder]].
     *
     * Note that the folder must be opened by the time it is given to the function.
     *
     * @param folder [[Folder]] which the contents list of.
+    * @param since Date since.
+    * @param until Date until.
     * @return An [[Array]] of [[Message]]s, if any.
     */
-  override def listFolder(folder: Folder): M[Array[Message]] = M.delay {
-    if (folder.isOpen) {
-      folder.getMessages
+  override def messages(folder: Folder, since: Option[LocalDate], until: Option[LocalDate]): M[Array[Message]] = M.delay {
+    // Get the search term for the date range:
+    val searchTearm = (since, until) match {
+      case (None, None) =>
+        None
+      case (Some(x), None) =>
+        Some(new SentDateTerm(ComparisonTerm.GE, _ld2d(x)))
+      case (None, Some(x)) =>
+        Some(new SentDateTerm(ComparisonTerm.LE, _ld2d(x)))
+      case (Some(x), Some(y)) =>
+        Some(new AndTerm(new SentDateTerm(ComparisonTerm.GE, _ld2d(x)), new SentDateTerm(ComparisonTerm.LE, _ld2d(y))))
     }
-    else {
+
+    // Attempt:
+    if (folder.isOpen) {
+      searchTearm match {
+        case None => folder.getMessages
+        case Some(term) => folder.search(term)
+      }
+    } else {
       Array.empty
     }
   }

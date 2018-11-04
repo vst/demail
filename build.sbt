@@ -1,9 +1,9 @@
 // Define versions for libraries:
-val VersionCats       = "1.0.1"
-val VersionCatsEffect = "0.8"
+val VersionCats       = "1.4.0"
+val VersionCatsEffect = "1.0.0"
 val VersionFansi      = "0.2.5"
-val VersionScallop    = "3.1.1"
-val VersionMail       = "1.4.1"
+val VersionScallop    = "3.1.3"
+val VersionMail       = "1.6.2"
 
 
 // Configure the root project:
@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
     name := "demail",
     organization := "com.vsthost.rnd",
     scalaVersion := "2.12.7",
-    version := "0.0.1",
+    version := "0.0.2",
 
     // Scalac Options:
     scalacOptions += "-deprecation",
@@ -29,7 +29,8 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-core"   % VersionCats,
       "org.typelevel" %% "cats-effect" % VersionCatsEffect,
       "com.lihaoyi"   %% "fansi"       % VersionFansi,
-      "javax.mail"    %  "mail"        % VersionMail,
+      "com.sun.mail"  %  "javax.mail"  % VersionMail,
+      "com.sun.mail"  %  "gimap"       % VersionMail,
       "org.rogach"    %% "scallop"     % VersionScallop,
     ),
 

@@ -4,16 +4,17 @@ import java.io.File
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.{Date, TimeZone, UUID}
+
 import javax.mail.internet.MimeBodyPart
 import javax.mail.{Folder, Message, Multipart, Part}
-
 import cats.data.EitherT
 import cats.implicits._
 import cats.effect.Effect
 import com.vsthost.rnd.demail.generic.Program
 import com.vsthost.rnd.demail.imap.{DefaultMailRepository, MailRepository}
-import org.rogach.scallop.Subcommand
+import org.rogach.scallop.{Subcommand, ValueConverter, singleArgConverter}
 
 import scala.language.higherKinds
 
@@ -33,6 +34,9 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     */
   override def purpose: String = "Download attachments (and optionally archive emails)"
 
+  // Define local date converter:
+  implicit val dateConverter: ValueConverter[LocalDate] = singleArgConverter[LocalDate](LocalDate.parse)
+
   // Add options:
   private val host = opt[String]("host", required = true, descr = "IMAP server host", noshort = true)
   private val port = opt[Int]("port", required = true, descr = "IMAP server port", noshort = true)
@@ -44,6 +48,8 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
   private val directory = opt[File]("directory", required = true, descr = "Local directory", noshort = true,
     validate = f => f.exists && f.isDirectory
   )
+  private val since = opt[LocalDate]("since", required = false, descr = "Date since (inc)", noshort = true)
+  private val until = opt[LocalDate]("until", required = false, descr = "Date until (inc)", noshort = true)
 
   /**
     * Defines (lazily) the mail repository which we will be working on.
@@ -82,7 +88,7 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
       folderOutbox <- EitherT(optionalOutbox(archive.toOption.filter(_.nonEmpty)))
 
       // Get message list:
-      messages <- EitherT.right[Throwable](repo.listFolder(folderInbox))
+      messages <- EitherT.right[Throwable](repo.messages(folderInbox, since.toOption, until.toOption))
 
       // Download attachments:
       downloaded = messages.map { message =>
@@ -129,9 +135,9 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     * @return [[Message]] printed on the console.
     */
   private def printMessage(message: Message): Message = {
-    println(fansi.Color.Blue(s"Subject : ${message.getSubject}").render)
-    println(fansi.Color.Blue(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Blue(s"Sent    : ${message.getSentDate}").render)
+    println(fansi.Color.Cyan(s"Subject : ${message.getSubject}").render)
+    println(fansi.Color.Cyan(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
+    println(fansi.Color.Cyan(s"Sent    : ${message.getSentDate}").render)
     message
   }
 

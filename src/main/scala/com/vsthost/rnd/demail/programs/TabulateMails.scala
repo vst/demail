@@ -1,14 +1,16 @@
 package com.vsthost.rnd.demail.programs
 
-import javax.mail.Message
+import java.time.LocalDate
 
+import javax.mail.Message
 import cats.data.EitherT
 import cats.effect.Effect
 import com.vsthost.rnd.demail.generic.Program
 import com.vsthost.rnd.demail.imap.{DefaultMailRepository, MailRepository}
-import org.rogach.scallop.Subcommand
+import org.rogach.scallop.{Subcommand, ValueConverter, singleArgConverter}
 
 import scala.language.higherKinds
+import scala.util.Try
 
 
 /**
@@ -25,6 +27,9 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
     */
   override def purpose: String = "Tabulate emails stored in the remote folder"
 
+  // Define local date converter:
+  implicit val dateConverter: ValueConverter[LocalDate] = singleArgConverter[LocalDate](LocalDate.parse)
+
   // Add options:
   private val host = opt[String]("host", required = true, descr = "IMAP server host", noshort = true)
   private val port = opt[Int]("port", required = true, descr = "IMAP server port", noshort = true)
@@ -32,6 +37,8 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
   private val user = opt[String]("user", required = true, descr = "IMAP server username", noshort = true)
   private val pass = opt[String]("pass", required = true, descr = "IMAP server password", noshort = true)
   private val folder = opt[String]("folder", required = true, descr = "Folder on IMAP server", noshort = true)
+  private val since = opt[LocalDate]("since", required = false, descr = "Date since (inc)", noshort = true)
+  private val until = opt[LocalDate]("until", required = false, descr = "Date until (inc)", noshort = true)
 
   /**
     * Defines (lazily) the mail repository which we will be working on.
@@ -58,7 +65,7 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
       folder <- EitherT(repo.openFolder(folder(), write = false))
 
       // Get message list:
-      messages <- EitherT.right[Throwable](repo.listFolder(folder))
+      messages <- EitherT.right[Throwable](repo.messages(folder, since.toOption, until.toOption))
 
       // Print each message on the console:
       _ = messages.foreach(printMessage)
@@ -78,9 +85,11 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
     * @return [[Message]] printed on the console.
     */
   private def printMessage(message: Message): Message = {
-    println(fansi.Color.Blue(s"Subject : ${message.getSubject}").render)
-    println(fansi.Color.Blue(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Blue(s"Sent    : ${message.getSentDate}").render)
+    println(fansi.Color.Cyan(s"Subject    : ${message.getSubject}").render)
+    println(fansi.Color.Cyan(s"From       : ${message.getFrom.map(_.toString).mkString(", ")}").render)
+    println(fansi.Color.Cyan(s"Sent       : ${message.getSentDate}").render)
+    println(fansi.Color.Cyan(s"Received   : ${message.getReceivedDate}").render)
+    println(fansi.Color.Cyan(f"Size       : ${BigDecimal(message.getSize / (1024.0 * 1024)).setScale(2, BigDecimal.RoundingMode.HALF_UP)} MB").render)
     println("")
     message
   }
