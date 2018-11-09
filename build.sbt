@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
     name := "demail",
     organization := "com.vsthost.rnd",
     scalaVersion := "2.12.7",
-    version := "0.0.3",
+    version := "0.0.4-SNAPSHOT",
 
     // Scalac Options:
     scalacOptions += "-deprecation",
