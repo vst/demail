@@ -1,11 +1,12 @@
 package com.vsthost.rnd.demail.programs
 
-import java.io.File
+import java.io.{File, FileOutputStream}
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.util.{Date, TimeZone, UUID}
+import java.util.{Base64, Date, TimeZone, UUID}
 
 import javax.mail.internet.MimeBodyPart
 import javax.mail.{Folder, Message, Multipart, Part}
@@ -41,6 +42,7 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
   private val host = opt[String]("host", required = true, descr = "IMAP server host", noshort = true)
   private val port = opt[Int]("port", required = true, descr = "IMAP server port", noshort = true)
   private val ussl = toggle("ssl", default = Some(false), descrYes = "Use SSL", descrNo = "No SSL", noshort = true)
+  private val mail = toggle("mail", default = Some(false), descrYes = "Download the mail itself, too", descrNo = "Don't download the mail itself", noshort = true)
   private val user = opt[String]("user", required = true, descr = "IMAP server username", noshort = true)
   private val pass = opt[String]("pass", required = true, descr = "IMAP server password", noshort = true)
   private val folder = opt[String]("folder", required = true, descr = "Folder on IMAP server", noshort = true)
@@ -95,11 +97,23 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
         // Print the message first:
         printMessage(message)
 
+        // Are we downloading the mail, too?
+        if (mail()) {
+          // Log what we are doing:
+          println(fansi.Color.Yellow("    Attempting to download mail...").render)
+
+          // Download messages:
+          val path = downloadMessage(message)
+
+          // Tell that:
+          println(fansi.Color.Green(s"    Downloaded: $path").render)
+        }
+
         // Log what we are doing:
-        println(fansi.Color.Yellow("    Attempting to download messages...").render)
+        println(fansi.Color.Yellow("    Attempting to download attachments...").render)
 
         // Download messages:
-        val paths = downloadAdttachments(message)
+        val paths = downloadAttachments(message)
 
         // Log it:
         paths match {
@@ -147,7 +161,7 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     * @param message Message which to download attachments of.
     * @return A [[List]] of [[Path]]s to the downloaded files.
     */
-  private def downloadAdttachments(message: Message): List[Path] = {
+  private def downloadAttachments(message: Message): List[Path] = {
     getAttachments(message).map(downloadPart(_, message))
   }
 
@@ -182,6 +196,41 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
   }
 
   /**
+    * Attempts to download the message and returns the [[Path]] to the downloaded file.
+    *
+    * @param message Message to download
+    * @return Path to the downloaded message.
+    */
+  private def downloadMessage(message: Message): Path = {
+    // We need a name for the target temporary file:
+    val tempfileName = getTempFilename
+
+    // Define the target path:
+    val targetPath = directory().toPath.resolve(tempfileName)
+
+    // Create the output stream with the temporary file:
+    val ostr = new FileOutputStream(targetPath.toFile)
+
+    // Write the message to the temporary file:
+    message.writeTo(ostr)
+
+    // Close the stream:
+    ostr.close()
+
+    // Get the new file name:
+    val filename = getMailFilename(targetPath, message)
+
+    // Get the new file path:
+    val newTargetPath = directory().toPath.resolve(filename)
+
+    // Move the file:
+    Files.move(targetPath, newTargetPath, StandardCopyOption.ATOMIC_MOVE)
+
+    // Return the target path:
+    newTargetPath
+  }
+
+  /**
     * Returns a unique, hidden file name for the temporary file to be used during downloading.
     *
     * @return A unique, hidden file name.
@@ -200,11 +249,35 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     // Get the MD5 sum:
     val md5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
 
+    // Get the message ID:
+    val id = message.getHeader("Message-ID").headOption.map(i => Base64.getEncoder.encodeToString(i.getBytes(StandardCharsets.UTF_8))).getOrElse(md5)
+
     // Get the date/time message is sent:
     val datetime = formatDate(message.getSentDate)
 
     // Construct the name and return:
-    s"${datetime}_${md5}_${part.getFileName}"
+    s"${datetime}_${id}_${md5}_${part.getFileName}"
+  }
+
+  /**
+    * Creates a target file name for the downloaded mail.
+    *
+    * @param path The path to the downloaded mail.
+    * @param message Original message.
+    * @return A unique-ish [[String]] for the target filename.
+    */
+  private def getMailFilename(path: Path, message: Message): String = {
+    // Get the MD5 sum:
+    val md5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
+
+    // Get the message ID (or use md5 instead, if it does not exist):
+    val id = message.getHeader("Message-ID").headOption.map(i => Base64.getEncoder.encodeToString(i.getBytes(StandardCharsets.UTF_8))).getOrElse(md5)
+
+    // Get the date/time message is sent:
+    val datetime = formatDate(message.getSentDate)
+
+    // Construct the name and return:
+    s"${datetime}_${id}_$md5.eml"
   }
 
   /**
