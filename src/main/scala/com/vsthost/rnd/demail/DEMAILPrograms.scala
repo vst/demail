@@ -3,7 +3,7 @@ package com.vsthost.rnd.demail
 import cats.effect.Effect
 import cats.implicits._
 import com.vsthost.rnd.demail.generic.Program
-import com.vsthost.rnd.demail.programs.{DownloadAttachments, ListFolders, TabulateMails}
+import com.vsthost.rnd.demail.programs.{DownloadAttachments, DownloadMessages, ListFolders, TabulateMails}
 import org.rogach.scallop.{ScallopConf, ScallopConfBase}
 
 import scala.language.higherKinds
@@ -27,6 +27,7 @@ class DEMAILPrograms[M[_] : Effect](arguments: Seq[String]) extends ScallopConf(
   addSubcommand(new ListFolders[M]("list-folders"))
   addSubcommand(new TabulateMails[M]("list-messages"))
   addSubcommand(new DownloadAttachments[M]("download-attachments"))
+  addSubcommand(new DownloadMessages[M]("download-messages"))
 
   // Done, let's verify:
   verify()

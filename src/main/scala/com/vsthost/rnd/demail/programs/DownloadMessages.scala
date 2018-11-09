@@ -8,32 +8,32 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.{Base64, Date, TimeZone, UUID}
 
-import javax.mail.internet.MimeBodyPart
-import javax.mail.{Folder, Message, Multipart, Part}
 import cats.data.EitherT
-import cats.implicits._
 import cats.effect.Effect
+import cats.implicits._
 import com.vsthost.rnd.demail.generic.Program
 import com.vsthost.rnd.demail.imap.{DefaultMailRepository, MailRepository}
+import javax.mail.internet.MimeBodyPart
+import javax.mail.{Folder, Message, Multipart, Part}
 import org.rogach.scallop.{Subcommand, ValueConverter, singleArgConverter}
 
 import scala.language.higherKinds
 
 
 /**
-  * Provides a command line sub-command to download email attachments in a given remote folder and
+  * Provides a command line sub-command to download emails in a given remote folder and
   * optionally archiving these emails.
   *
   * @param command The name of the sub-command.
   * @tparam M Type parameter for the effect.
   */
-class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(command) with Program[M] {
+class DownloadMessages[M[_] : Effect](command: String) extends Subcommand(command) with Program[M] {
   /**
     * Returns the purpose of the program.
     *
     * @return The purpose of the program.
     */
-  override def purpose: String = "Download attachments (and optionally archive emails)"
+  override def purpose: String = "Download emails (and optionally archive emails)"
 
   // Define local date converter:
   implicit val dateConverter: ValueConverter[LocalDate] = singleArgConverter[LocalDate](LocalDate.parse)
@@ -42,7 +42,6 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
   private val host = opt[String]("host", required = true, descr = "IMAP server host", noshort = true)
   private val port = opt[Int]("port", required = true, descr = "IMAP server port", noshort = true)
   private val ussl = toggle("ssl", default = Some(false), descrYes = "Use SSL", descrNo = "No SSL", noshort = true)
-  private val mail = toggle("mail", default = Some(false), descrYes = "Download the mail itself, too", descrNo = "Don't download the mail itself", noshort = true)
   private val user = opt[String]("user", required = true, descr = "IMAP server username", noshort = true)
   private val pass = opt[String]("pass", required = true, descr = "IMAP server password", noshort = true)
   private val folder = opt[String]("folder", required = true, descr = "Folder on IMAP server", noshort = true)
@@ -97,41 +96,23 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
         // Print the message first:
         printMessage(message)
 
-        // Are we downloading the mail, too?
-        if (mail()) {
-          // Log what we are doing:
-          println(fansi.Color.Yellow("    Attempting to download mail...").render)
-
-          // Download messages:
-          val path = downloadMessage(message)
-
-          // Tell that:
-          println(fansi.Color.Green(s"    Downloaded: $path").render)
-        }
-
         // Log what we are doing:
-        println(fansi.Color.Yellow("    Attempting to download attachments...").render)
+        println(fansi.Color.Yellow("    Attempting to download mail...").render)
 
         // Download messages:
-        val paths = downloadAttachments(message)
+        val path = downloadMessage(message)
 
-        // Log it:
-        paths match {
-          case Nil => {
-            println(fansi.Color.Red("    No attachments found to be downloaded...").render)
-            None
-          }
-          case _ => {
-            paths.foreach(p => println(fansi.Color.Green(s"    Downloaded: $p").render))
-            Some(message)
-          }
-        }
+        // Tell that:
+        println(fansi.Color.Green(s"    Downloaded: $path").render)
+
+        // Return:
+        message
       }
 
       // Archive messages, if possible:
       _ <- folderOutbox match {
         case None => EitherT.pure[M, Throwable](println(fansi.Color.LightRed("Skipping archive operation...")))
-        case Some(arch) => EitherT.right[Throwable](repo.move(downloaded.flatten, folderInbox, arch))
+        case Some(arch) => EitherT.right[Throwable](repo.move(downloaded, folderInbox, arch))
       }
 
       // Close the folder:
@@ -153,46 +134,6 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     println(fansi.Color.Cyan(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
     println(fansi.Color.Cyan(s"Sent    : ${message.getSentDate}").render)
     message
-  }
-
-  /**
-    * Attempts to download all attachments of the message and returns a list of [[Path]]s to the downloaded files.
-    *
-    * @param message Message which to download attachments of.
-    * @return A [[List]] of [[Path]]s to the downloaded files.
-    */
-  private def downloadAttachments(message: Message): List[Path] = {
-    getAttachments(message).map(downloadPart(_, message))
-  }
-
-  /**
-    * Downloads the given part from the given message and returns the path of the download.
-    *
-    * @param part     The part to download.
-    * @param message  Original message the part belongs to.
-    * @return The path to the downloaded attachment.
-    */
-  private def downloadPart(part: MimeBodyPart, message: Message): Path = {
-    // We need a name for the target temporary file:
-    val tempfileName = getTempFilename
-
-    // Define the target path:
-    val targetPath = directory().toPath.resolve(tempfileName)
-
-    // Download the part:
-    part.saveFile(targetPath.toFile)
-
-    // Get the new file name:
-    val filename = getFilename(targetPath, part, message)
-
-    // Get the new file path:
-    val newTargetPath = directory().toPath.resolve(filename)
-
-    // Move the file:
-    Files.move(targetPath, newTargetPath, StandardCopyOption.ATOMIC_MOVE)
-
-    // Return the target path:
-    newTargetPath
   }
 
   /**
@@ -238,28 +179,6 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
   private def getTempFilename: String = s"._${UUID.randomUUID.toString}.download"
 
   /**
-    * Creates a target file name for the downloaded attachment.
-    *
-    * @param path The path to the downloaded attachment.
-    * @param part [[MimeBodyPart]] representing the attachment.
-    * @param message Original message containing the attachment.
-    * @return A unique-ish [[String]] for the target attachment filename.
-    */
-  private def getFilename(path: Path, part: MimeBodyPart, message: Message): String = {
-    // Get the MD5 sum:
-    val md5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
-
-    // Get the message ID:
-    val id = message.getHeader("Message-ID").headOption.map(i => Base64.getEncoder.encodeToString(i.getBytes(StandardCharsets.UTF_8))).getOrElse(md5)
-
-    // Get the date/time message is sent:
-    val datetime = formatDate(message.getSentDate)
-
-    // Construct the name and return:
-    s"${datetime}_${id}_${md5}_${part.getFileName}"
-  }
-
-  /**
     * Creates a target file name for the downloaded mail.
     *
     * @param path The path to the downloaded mail.
@@ -298,27 +217,5 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
 
     // Format the input and return:
     formatter.format(datetime)
-  }
-
-  /**
-    * Returns all the attachments of the message as [[MimeBodyPart]], if any.
-    *
-    * @param message The message of which to find attachments to find and return.
-    * @return A [[List]] of [[MimeBodyPart]], if any.
-    */
-  private def getAttachments(message: Message): List[MimeBodyPart] = {
-    // Get the content type:
-    Some(message)
-      // We are only interested in "multipart" messages:
-      .filter(_.getContentType.contains("multipart"))
-      // Get the content as [[Multipart]]
-      .map(_.getContent.asInstanceOf[Multipart])
-      // Extract parts of interest:
-      .map { parts =>
-        (0 until parts.getCount)
-          .map(i => parts.getBodyPart(i).asInstanceOf[MimeBodyPart])
-          .filter(part => Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition))
-      }
-      .getOrElse(Seq.empty).toList
   }
 }
