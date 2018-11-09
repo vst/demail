@@ -1,5 +1,15 @@
-VERS: 2018-11-04 ------- release/0.0.2
+VERS: 2018-11-09 ------- release/0.0.3
 
+    * 2018-11-09 c9d2bf2 Version bumped to 0.0.3 (vst@vsthost.com)
+    * 2018-11-09 ccf8edd Download original msg opt for download-attachments (vst@vsthost.com)
+    * 2018-11-09 a0842f0 Sub-command to download messages themselves (vst@vsthost.com)
+    * 2018-11-09 8e6c0cc Display addresses on list-messages (vst@vsthost.com)
+    * 2018-11-04 17c8487 Version bumped to 0.0.3-SNAPSHOT (vst@vsthost.com)
+
+VERS: 2018-11-04 30ceff9 0.0.2 (vst@vsthost.com)
+
+    * 2018-11-04 063198a Merge branch 'release/0.0.2' (vst@vsthost.com)
+    * 2018-11-04 3995a50 Change log updated (vst@vsthost.com)
     * 2018-11-04 4e19348 Version bumped to 0.0.2 (vst@vsthost.com)
     * 2018-11-04 b65289c List mails with optional date range, no Gmail/SORT (vst@vsthost.com)
     * 2018-11-03 5ebf4f3 Use com.sun.mail, enable GMail/IMAP capabilities (vst@vsthost.com)
