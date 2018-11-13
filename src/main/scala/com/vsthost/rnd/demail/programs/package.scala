@@ -1,5 +1,7 @@
 package com.vsthost.rnd.demail
 
+import java.nio.file.{Files, Path}
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.{Date, TimeZone, UUID}
 
@@ -45,5 +47,19 @@ package object programs {
     println(fansi.Color.Cyan(f"Size       : ${BigDecimal(msg.getSize / (1024.0 * 1024)).setScale(2, BigDecimal.RoundingMode.HALF_UP)} MB").render)
     println("")
     msg
+  }
+
+  /**
+    * Returns the md5 sum of the given string.
+    */
+  val md5FromString: String => String = (text: String) => {
+    MessageDigest.getInstance("MD5").digest(text.getBytes()).map("%02X".format(_)).mkString
+  }
+
+  /**
+    * Returns the md5 sum of the file at the given path.
+    */
+  val md5FromPath: Path => String = (path: Path) => {
+    MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
   }
 }

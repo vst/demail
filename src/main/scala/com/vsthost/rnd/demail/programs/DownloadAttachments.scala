@@ -226,16 +226,16 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     */
   private def getFilename(path: Path, part: MimeBodyPart, message: Message): String = {
     // Get the MD5 sum:
-    val md5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
+    val md5 = md5FromPath(path)
 
-    // Get the message ID:
-    val id = message.getHeader("Message-ID").headOption.map(i => Base64.getEncoder.encodeToString(i.getBytes(StandardCharsets.UTF_8))).getOrElse(md5)
+    // Get the MD5 sum of the message ID:
+    val id5 = message.getHeader("Message-ID").headOption.map(md5FromString).getOrElse(md5)
 
     // Get the date/time message is sent:
     val datetime = formatDateTime(message.getSentDate)
 
     // Construct the name and return:
-    s"${datetime}_${id}_${md5}_${part.getFileName}"
+    s"${datetime}_${id5}_${md5}_${part.getFileName}"
   }
 
   /**
@@ -247,16 +247,16 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
     */
   private def getMailFilename(path: Path, message: Message): String = {
     // Get the MD5 sum:
-    val md5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
+    val md5 = md5FromPath(path)
 
-    // Get the message ID (or use md5 instead, if it does not exist):
-    val id = message.getHeader("Message-ID").headOption.map(i => Base64.getEncoder.encodeToString(i.getBytes(StandardCharsets.UTF_8))).getOrElse(md5)
+    // Get the MD5 sum of the message ID:
+    val id5 = message.getHeader("Message-ID").headOption.map(md5FromString).getOrElse(md5)
 
     // Get the date/time message is sent:
     val datetime = formatDateTime(message.getSentDate)
 
     // Construct the name and return:
-    s"${datetime}_${id}_$md5.eml"
+    s"${datetime}_${id5}_$md5.eml"
   }
 
 
