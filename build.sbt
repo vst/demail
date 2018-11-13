@@ -30,7 +30,6 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-effect" % VersionCatsEffect,
       "com.lihaoyi"   %% "fansi"       % VersionFansi,
       "com.sun.mail"  %  "javax.mail"  % VersionMail,
-      "com.sun.mail"  %  "gimap"       % VersionMail,
       "org.rogach"    %% "scallop"     % VersionScallop,
     ),
 
