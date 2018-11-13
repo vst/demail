@@ -5,7 +5,6 @@ import java.util.Date
 
 import cats.effect.Effect
 import cats.implicits._
-import com.sun.mail.gimap.GmailStore
 import javax.mail._
 import javax.mail.search.{AndTerm, ComparisonTerm, SentDateTerm}
 
@@ -31,27 +30,24 @@ class DefaultMailRepository[M[_]](host: String,
                                   pass: String)
                                  (implicit M : Effect[M]) extends MailRepository[M] {
   /**
-    * Indicates that we are running on gmail.
-    */
-  private val isGmail = host == "imap.gmail.com"
-  /**
     * Defines the store over which we keep the IMAP connection to the remote.
     */
   lazy private val _store: Store = {
     // Define the system properties:
     val props = System.getProperties
 
+    // Get the protocol:
+    val proto = if (ssl) "imaps" else "imap"
+
     // Set parameters:
-    props.setProperty("mail.store.protocol", if (ssl) "imaps" else "imap")
+    props.setProperty("mail.store.protocol", proto)
+    props.setProperty(s"mail.$proto.fetchsize", f"${1024 * 1024}")
 
     // Get the session:
-    val session = Session.getDefaultInstance(props, null)
+    val session = Session.getInstance(props, null)
 
-    // Get the store and return:
-    if (host == "imap.gmail.com")
-      session.getStore("gimap").asInstanceOf[GmailStore]
-    else
-      session.getStore(if (ssl) "imaps" else "imap")
+    // Create the store and return:
+    session.getStore(proto)
   }
 
   /**
@@ -90,14 +86,14 @@ class DefaultMailRepository[M[_]](host: String,
     status <- isConnected
 
     // Are we already connected?
-    retval = if (status) {
+    _ = if (status) {
       // Yep, close:
-      _store.close().asRight
+      _store.close()
     } else {
       // Nope, not connected anyway. Return as is:
-      ().asRight
+      ()
     }
-  } yield retval
+  } yield ()
 
 
   /**

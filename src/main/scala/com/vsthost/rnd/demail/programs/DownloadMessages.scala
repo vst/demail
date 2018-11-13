@@ -4,17 +4,15 @@ import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.security.MessageDigest
-import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.util.{Base64, Date, TimeZone, UUID}
+import java.util.Base64
 
 import cats.data.EitherT
 import cats.effect.Effect
 import cats.implicits._
 import com.vsthost.rnd.demail.generic.Program
 import com.vsthost.rnd.demail.imap.{DefaultMailRepository, MailRepository}
-import javax.mail.internet.MimeBodyPart
-import javax.mail.{Folder, Message, Multipart, Part}
+import javax.mail.{Folder, Message}
 import org.rogach.scallop.{Subcommand, ValueConverter, singleArgConverter}
 
 import scala.language.higherKinds
@@ -94,7 +92,7 @@ class DownloadMessages[M[_] : Effect](command: String) extends Subcommand(comman
       // Download attachments:
       downloaded = messages.map { message =>
         // Print the message first:
-        printMessage(message)
+        showMessage(message)
 
         // Log what we are doing:
         println(fansi.Color.Yellow("    Attempting to download mail...").render)
@@ -124,19 +122,6 @@ class DownloadMessages[M[_] : Effect](command: String) extends Subcommand(comman
   }.value
 
   /**
-    * Provides a utility function to print the message.
-    *
-    * @param message The message to print to the console.
-    * @return [[Message]] printed on the console.
-    */
-  private def printMessage(message: Message): Message = {
-    println(fansi.Color.Cyan(s"Subject : ${message.getSubject}").render)
-    println(fansi.Color.Cyan(s"From    : ${message.getFrom.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Cyan(s"Sent    : ${message.getSentDate}").render)
-    message
-  }
-
-  /**
     * Attempts to download the message and returns the [[Path]] to the downloaded file.
     *
     * @param message Message to download
@@ -144,7 +129,7 @@ class DownloadMessages[M[_] : Effect](command: String) extends Subcommand(comman
     */
   private def downloadMessage(message: Message): Path = {
     // We need a name for the target temporary file:
-    val tempfileName = getTempFilename
+    val tempfileName = getTempFilename()
 
     // Define the target path:
     val targetPath = directory().toPath.resolve(tempfileName)
@@ -172,13 +157,6 @@ class DownloadMessages[M[_] : Effect](command: String) extends Subcommand(comman
   }
 
   /**
-    * Returns a unique, hidden file name for the temporary file to be used during downloading.
-    *
-    * @return A unique, hidden file name.
-    */
-  private def getTempFilename: String = s"._${UUID.randomUUID.toString}.download"
-
-  /**
     * Creates a target file name for the downloaded mail.
     *
     * @param path The path to the downloaded mail.
@@ -187,35 +165,15 @@ class DownloadMessages[M[_] : Effect](command: String) extends Subcommand(comman
     */
   private def getMailFilename(path: Path, message: Message): String = {
     // Get the MD5 sum:
-    val md5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(path)).map("%02X".format(_)).mkString
+    val md5 = md5FromPath(path)
 
-    // Get the message ID (or use md5 instead, if it does not exist):
-    val id = message.getHeader("Message-ID").headOption.map(i => Base64.getEncoder.encodeToString(i.getBytes(StandardCharsets.UTF_8))).getOrElse(md5)
+    // Get the MD5 sum of the message ID:
+    val id5 = message.getHeader("Message-ID").headOption.map(md5FromString).getOrElse(md5)
 
     // Get the date/time message is sent:
-    val datetime = formatDate(message.getSentDate)
+    val datetime = formatDateTime(message.getSentDate)
 
     // Construct the name and return:
-    s"${datetime}_${id}_$md5.eml"
-  }
-
-  /**
-    * Formats the given date/time in ISO format.
-    *
-    * @param datetime Date/time to format.
-    * @return An ISO representation of the given datetime.
-    */
-  private def formatDate(datetime: Date): String = {
-    // We will use UTC timezone:
-    val timezone = TimeZone.getTimeZone("UTC")
-
-    // Define the formatter:
-    val formatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss'Z'")
-
-    // Set the timezone of the formatter:
-    formatter.setTimeZone(timezone)
-
-    // Format the input and return:
-    formatter.format(datetime)
+    s"${datetime}_${id5}_$md5.eml"
   }
 }

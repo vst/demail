@@ -1,5 +1,15 @@
-VERS: 2018-11-09 ------- release/0.0.3
+VERS: 2018-11-13 ------- release/0.0.4
 
+    * 2018-11-13 f2d57a2 Version bumped to 0.0.4 (vst@vsthost.com)
+    * 2018-11-13 88308cd Fix for long filenames (vst@vsthost.com)
+    * 2018-11-13 a6bd23d Downloading messages and attachments faster (vst@vsthost.com)
+    * 2018-11-13 0b45e65 Quick code re-organization (vst@vsthost.com)
+    * 2018-11-09 f42dd0f Version bumped to 0.0.4-SNAPSHOT (vst@vsthost.com)
+
+VERS: 2018-11-09 ba55b24 0.0.3 (vst@vsthost.com)
+
+    * 2018-11-09 d67c12d Merge branch 'release/0.0.3' (vst@vsthost.com)
+    * 2018-11-09 91e3b81 Change log updated (vst@vsthost.com)
     * 2018-11-09 c9d2bf2 Version bumped to 0.0.3 (vst@vsthost.com)
     * 2018-11-09 ccf8edd Download original msg opt for download-attachments (vst@vsthost.com)
     * 2018-11-09 a0842f0 Sub-command to download messages themselves (vst@vsthost.com)

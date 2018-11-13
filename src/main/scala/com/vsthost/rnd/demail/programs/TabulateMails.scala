@@ -2,7 +2,6 @@ package com.vsthost.rnd.demail.programs
 
 import java.time.LocalDate
 
-import javax.mail.Message
 import cats.data.EitherT
 import cats.effect.Effect
 import com.vsthost.rnd.demail.generic.Program
@@ -10,7 +9,6 @@ import com.vsthost.rnd.demail.imap.{DefaultMailRepository, MailRepository}
 import org.rogach.scallop.{Subcommand, ValueConverter, singleArgConverter}
 
 import scala.language.higherKinds
-import scala.util.Try
 
 
 /**
@@ -68,7 +66,7 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
       messages <- EitherT.right[Throwable](repo.messages(folder, since.toOption, until.toOption))
 
       // Print each message on the console:
-      _ = messages.foreach(printMessage)
+      _ = messages.foreach(showMessage)
 
       // Close the folder:
       _ <- EitherT.right[Throwable](repo.closeFolder(folder))
@@ -77,21 +75,4 @@ class TabulateMails[M[_] : Effect](command: String) extends Subcommand(command) 
       _ <- EitherT.right[Throwable](repo.disconnect)
     } yield 0
   }.value
-
-  /**
-    * Provides a utility function to print the message.
-    *
-    * @param message The message to print to the console.
-    * @return [[Message]] printed on the console.
-    */
-  private def printMessage(message: Message): Message = {
-    println(fansi.Color.Cyan(s"Subject    : ${message.getSubject}").render)
-    println(fansi.Color.Cyan(s"From       : ${message.getFrom.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Cyan(s"Recipients : ${message.getAllRecipients.map(_.toString).mkString(", ")}").render)
-    println(fansi.Color.Cyan(s"Sent       : ${message.getSentDate}").render)
-    println(fansi.Color.Cyan(s"Received   : ${message.getReceivedDate}").render)
-    println(fansi.Color.Cyan(f"Size       : ${BigDecimal(message.getSize / (1024.0 * 1024)).setScale(2, BigDecimal.RoundingMode.HALF_UP)} MB").render)
-    println("")
-    message
-  }
 }
