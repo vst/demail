@@ -90,14 +90,14 @@ class DefaultMailRepository[M[_]](host: String,
     status <- isConnected
 
     // Are we already connected?
-    retval = if (status) {
+    _ = if (status) {
       // Yep, close:
-      _store.close().asRight
+      _store.close()
     } else {
       // Nope, not connected anyway. Return as is:
-      ().asRight
+      ()
     }
-  } yield retval
+  } yield ()
 
 
   /**
