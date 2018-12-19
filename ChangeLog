@@ -1,5 +1,13 @@
-VERS: 2018-11-13 ------- release/0.0.4
+VERS: 2018-12-19 ------- release/0.0.5
 
+    * 2018-12-19 5165a5b Version bumped to 0.0.5 (vst@vsthost.com)
+    * 2018-12-19 453aa61 Extract the contents of winmail.dat files (vst@vsthost.com)
+    * 2018-11-13 0f8c74c Version bumped to 0.0.5-SNAPSHOT (vst@vsthost.com)
+
+VERS: 2018-11-13 7f25b4a 0.0.4 (vst@vsthost.com)
+
+    * 2018-11-13 76a6946 Merge branch 'release/0.0.4' (vst@vsthost.com)
+    * 2018-11-13 45f2ef6 Change log updated (vst@vsthost.com)
     * 2018-11-13 f2d57a2 Version bumped to 0.0.4 (vst@vsthost.com)
     * 2018-11-13 88308cd Fix for long filenames (vst@vsthost.com)
     * 2018-11-13 a6bd23d Downloading messages and attachments faster (vst@vsthost.com)

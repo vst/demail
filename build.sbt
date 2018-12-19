@@ -4,6 +4,7 @@ val VersionCatsEffect = "1.0.0"
 val VersionFansi      = "0.2.5"
 val VersionScallop    = "3.1.3"
 val VersionMail       = "1.6.2"
+val VersionPOI        = "4.0.1"
 
 
 // Configure the root project:
@@ -15,7 +16,7 @@ lazy val root = (project in file("."))
     name := "demail",
     organization := "com.vsthost.rnd",
     scalaVersion := "2.12.7",
-    version := "0.0.4",
+    version := "0.0.5",
 
     // Scalac Options:
     scalacOptions += "-deprecation",
@@ -26,11 +27,13 @@ lazy val root = (project in file("."))
 
     // Libraries:
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % VersionCats,
-      "org.typelevel" %% "cats-effect" % VersionCatsEffect,
-      "com.lihaoyi"   %% "fansi"       % VersionFansi,
-      "com.sun.mail"  %  "javax.mail"  % VersionMail,
-      "org.rogach"    %% "scallop"     % VersionScallop,
+      "org.typelevel"  %% "cats-core"      % VersionCats,
+      "org.typelevel"  %% "cats-effect"    % VersionCatsEffect,
+      "com.lihaoyi"    %% "fansi"          % VersionFansi,
+      "com.sun.mail"   %  "javax.mail"     % VersionMail,
+      "org.rogach"     %% "scallop"        % VersionScallop,
+      "org.apache.poi" %  "poi"            % VersionPOI,
+      "org.apache.poi" %  "poi-scratchpad" % VersionPOI,
     ),
 
     // Debian packaging configuration:
