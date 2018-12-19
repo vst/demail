@@ -14,6 +14,7 @@ import com.vsthost.rnd.demail.generic.Program
 import com.vsthost.rnd.demail.imap.{DefaultMailRepository, MailRepository}
 import javax.mail.internet.MimeBodyPart
 import javax.mail.{Folder, Message, Multipart, Part}
+import org.apache.poi.hmef.extractor.HMEFContentsExtractor
 import org.rogach.scallop.{Subcommand, ValueConverter, singleArgConverter}
 
 import scala.language.higherKinds
@@ -176,6 +177,26 @@ class DownloadAttachments[M[_] : Effect](command: String) extends Subcommand(com
 
     // Move the file:
     Files.move(targetPath, newTargetPath, StandardCopyOption.ATOMIC_MOVE)
+
+    // By now, we have our file. There is a corner case. If the file is in Microsoft TNEF message encoding format, we
+    // want to extract its attachments, too.
+    //
+    // Check if we have a TNEF file:
+    if (newTargetPath.toString.toLowerCase.endsWith("winmail.dat")) {
+      // Yep. Extract all attachments.
+      val tnefext = new HMEFContentsExtractor(newTargetPath.toFile)
+
+      // Define the directory for the output:
+      val newTargetDir = directory().toPath.resolve(s"${filename}_d")
+
+      // Create the directory:
+      if (!newTargetDir.toFile.exists()) {
+        newTargetDir.toFile.mkdirs()
+      }
+
+      // Extract attachments:
+      tnefext.extractAttachments(newTargetDir.toFile)
+    }
 
     // Return the target path:
     newTargetPath
